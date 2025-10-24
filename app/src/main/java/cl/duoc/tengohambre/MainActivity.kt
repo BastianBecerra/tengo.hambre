@@ -13,16 +13,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import cl.duoc.tengohambre.model.Cupon
+import cl.duoc.tengohambre.ui.PantallaInicio
 import cl.duoc.tengohambre.ui.theme.TengoHambreTheme
 import cl.duoc.tengohambre.viewmodel.CuponViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
-
     private val viewModel: CuponViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,9 +35,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    var pantalla by remember { mutableStateOf("inicio") }
+                    var pantalla by remember { mutableStateOf("bienvenida") }
 
                     when (pantalla) {
+                        "bienvenida" -> PantallaInicio(onComenzar = { pantalla = "inicio" })
                         "inicio" -> PantallaCupones(
                             viewModel = viewModel,
                             onVerUsados = { pantalla = "usados" }
@@ -149,8 +151,11 @@ fun TarjetaCupon(cupon: Cupon, onMarcarUsado: (Cupon) -> Unit) {
     else
         MaterialTheme.colorScheme.primaryContainer
 
-    val textoCodificado = URLEncoder.encode(cupon.codigo, StandardCharsets.UTF_8.toString())
-    val urlQr = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=$textoCodificado"
+    val enlaceCupon = "https://tengohambre.cl/cupon?id=${cupon.codigo}"
+    val enlaceCodificado = URLEncoder.encode(enlaceCupon, StandardCharsets.UTF_8.toString())
+    val urlQr = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=$enlaceCodificado"
+
+    val context = LocalContext.current
 
     Card(
         modifier = Modifier
@@ -182,9 +187,23 @@ fun TarjetaCupon(cupon: Cupon, onMarcarUsado: (Cupon) -> Unit) {
             )
 
             Spacer(Modifier.height(4.dp))
+
             Text(
                 text = if (cupon.usado) "Cupón usado" else "Cupón activo",
                 style = MaterialTheme.typography.bodyMedium
+            )
+
+            Text(
+                text = enlaceCupon,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .clickable {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                        intent.data = android.net.Uri.parse(enlaceCupon)
+                        context.startActivity(intent)
+                    }
             )
         }
     }
