@@ -16,36 +16,88 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import cl.duoc.tengohambre.data.AppPreferences
 import cl.duoc.tengohambre.model.Cupon
 import cl.duoc.tengohambre.ui.PantallaInicio
+import cl.duoc.tengohambre.ui.LoginScreen
+import cl.duoc.tengohambre.ui.RegisterScreen
+import cl.duoc.tengohambre.ui.XanoPantallaCupones
 import cl.duoc.tengohambre.ui.theme.TengoHambreTheme
 import cl.duoc.tengohambre.viewmodel.CuponViewModel
+import cl.duoc.tengohambre.viewmodel.UserViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
+
     private val viewModel: CuponViewModel by viewModels()
+    private val userViewModel: UserViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
+
+            val context = LocalContext.current
+            val prefs = remember { AppPreferences(context) }
+
+            var pantalla by remember {
+                mutableStateOf(
+                    if (prefs.estaLogeado()) "inicio" else "bienvenida"
+                )
+            }
+
+
+            if (prefs.estaLogeado()) {
+                userViewModel.setNombre(prefs.obtenerNombre())
+                viewModel.iniciar(context, prefs.obtenerEmail() ?: "")
+            }
+
             TengoHambreTheme {
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    var pantalla by remember { mutableStateOf("bienvenida") }
 
                     when (pantalla) {
-                        "bienvenida" -> PantallaInicio(onComenzar = { pantalla = "inicio" })
+
+                        "bienvenida" -> PantallaInicio(
+                            nombreUsuario = prefs.obtenerNombre(),
+                            onComenzar = { pantalla = "inicio" },
+                            onGoToLogin = { pantalla = "login" },
+                            onVerCuponesExternos = { pantalla = "cupones" } // ← agregado
+                        )
+
+                        "login" -> LoginScreen(
+                            onLoginSuccess = { nombre, email ->
+                                userViewModel.setNombre(nombre)
+                                viewModel.iniciar(context, email)
+                                pantalla = "inicio"
+                            },
+                            onGoToRegister = { pantalla = "register" },
+                            onBack = { pantalla = "bienvenida" }
+                        )
+
+                        "register" -> RegisterScreen(
+                            onRegisterSuccess = { pantalla = "login" },
+                            onGoToLogin = { pantalla = "login" }
+                        )
+
                         "inicio" -> PantallaCupones(
                             viewModel = viewModel,
-                            onVerUsados = { pantalla = "usados" }
+                            onVerUsados = { pantalla = "usados" },
+                            onVolver = { pantalla = "bienvenida" }
                         )
+
                         "usados" -> PantallaCuponesUsados(
                             viewModel = viewModel,
                             onVolver = { pantalla = "inicio" }
+                        )
+
+                        "cupones" -> XanoPantallaCupones(
+                            onVolver = { pantalla = "bienvenida" }
                         )
                     }
                 }
@@ -57,7 +109,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun PantallaCupones(
     viewModel: CuponViewModel,
-    onVerUsados: () -> Unit
+    onVerUsados: () -> Unit,
+    onVolver: () -> Unit
 ) {
     val todosLosCupones = viewModel.listaCupones
     val cuponesActivos = todosLosCupones.filter { !it.usado }
@@ -69,6 +122,7 @@ fun PantallaCupones(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Text("Tengo Hambre - Cupones", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
 
@@ -85,6 +139,13 @@ fun PantallaCupones(
                 enabled = hayUsados
             ) {
                 Text("Ver cupones usados")
+            }
+
+            Button(
+                onClick = onVolver,
+                modifier = Modifier.wrapContentWidth()
+            ) {
+                Text("Inicio")
             }
         }
 
@@ -120,6 +181,7 @@ fun PantallaCuponesUsados(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Text("Mis Cupones Usados", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
 

@@ -1,19 +1,30 @@
 package cl.duoc.tengohambre.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.duoc.tengohambre.R
+import cl.duoc.tengohambre.data.AppPreferences
 
 @Composable
-fun PantallaInicio(onComenzar: () -> Unit) {
+fun PantallaInicio(
+    nombreUsuario: String,
+    onComenzar: () -> Unit,
+    onGoToLogin: () -> Unit,
+    onVerCuponesExternos: () -> Unit
+) {
+    val context = LocalContext.current
+    val prefs = remember { AppPreferences(context) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -21,7 +32,7 @@ fun PantallaInicio(onComenzar: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo
+
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo Tengo Hambre",
@@ -29,6 +40,13 @@ fun PantallaInicio(onComenzar: () -> Unit) {
                 .size(180.dp)
                 .padding(bottom = 16.dp)
         )
+
+        Text(
+            text = "Bienvenido, $nombreUsuario",
+            style = MaterialTheme.typography.bodyLarge
+        )
+
+        Spacer(Modifier.height(8.dp))
 
         Text(
             text = "Tengo Hambre",
@@ -50,6 +68,36 @@ fun PantallaInicio(onComenzar: () -> Unit) {
 
         Button(onClick = onComenzar) {
             Text("Comenzar")
+        }
+
+        Spacer(Modifier.height(18.dp))
+
+        Button(
+            onClick = { onVerCuponesExternos() },
+            modifier = Modifier.padding(top = 12.dp)
+        ) {
+            Text("Ver cupones de Xano")
+        }
+
+        Spacer(Modifier.height(18.dp))
+
+        if (!prefs.estaLogeado()) {
+            Text(
+                text = "¿Ya tienes cuenta? Iniciar sesión",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.clickable { onGoToLogin() }
+            )
+        } else {
+            Button(
+                onClick = {
+                    prefs.cerrarSesion()
+                    onGoToLogin()
+                },
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text("Cerrar sesión")
+            }
         }
     }
 }
