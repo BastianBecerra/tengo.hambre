@@ -27,6 +27,12 @@ import cl.duoc.tengohambre.viewmodel.CuponViewModel
 import cl.duoc.tengohambre.viewmodel.UserViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 
 class MainActivity : ComponentActivity() {
 
@@ -81,7 +87,11 @@ class MainActivity : ComponentActivity() {
                         )
 
                         "register" -> RegisterScreen(
-                            onRegisterSuccess = { pantalla = "login" },
+                            onRegisterSuccess = { nombre, email ->
+                                userViewModel.setNombre(nombre)
+                                viewModel.iniciar(context, email)
+                                pantalla = "inicio"
+                            },
                             onGoToLogin = { pantalla = "login" }
                         )
 
@@ -206,12 +216,29 @@ fun PantallaCuponesUsados(
     }
 }
 
+
+@DrawableRes
+fun obtenerLogoPorOrigen(origen: String): Int {
+    return when (origen) {
+        "McDonalds" -> R.drawable.logo_mcdonald
+        "Wendy" -> R.drawable.logo_wendys
+        "BurgerKing" -> R.drawable.logo_burger_king
+        "DominoPizza" -> R.drawable.logo_domino_pizza
+        "KFC" -> R.drawable.logo_kfc
+        "PapaJohns" -> R.drawable.logo_papa_jhons
+        else -> R.drawable.logo
+    }
+}
+
 @Composable
 fun TarjetaCupon(cupon: Cupon, onMarcarUsado: (Cupon) -> Unit) {
     val fondo = if (cupon.usado)
         MaterialTheme.colorScheme.surfaceVariant
     else
         MaterialTheme.colorScheme.primaryContainer
+
+    val formatoFecha = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+    val fechaLegible = formatoFecha.format(Date(cupon.fecha))
 
     val enlaceCupon = "https://tengohambre.cl/cupon?id=${cupon.codigo}"
     val enlaceCodificado = URLEncoder.encode(enlaceCupon, StandardCharsets.UTF_8.toString())
@@ -232,7 +259,33 @@ fun TarjetaCupon(cupon: Cupon, onMarcarUsado: (Cupon) -> Unit) {
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(cupon.codigo, style = MaterialTheme.typography.bodyLarge)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                val logoId = obtenerLogoPorOrigen(cupon.origen)
+                Image(
+                    painter = painterResource(id = logoId),
+                    contentDescription = "Logo de ${cupon.origen}",
+                    modifier = Modifier.size(50.dp) // Tamaño del logo
+                )
+
+                Text(
+                    cupon.codigo,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
+
+            Text(
+                text = "Creado: $fechaLegible",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             Spacer(Modifier.height(8.dp))
 
             AndroidView(

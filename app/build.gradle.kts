@@ -61,6 +61,12 @@ dependencies {
     implementation("androidx.datastore:datastore-core-okio:1.2.0")
 
 
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.10")
+
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

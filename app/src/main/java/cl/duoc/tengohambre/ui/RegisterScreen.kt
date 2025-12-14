@@ -13,7 +13,7 @@ import cl.duoc.tengohambre.data.AppPreferences
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,
+    onRegisterSuccess: (nombre: String, email: String) -> Unit,
     onGoToLogin: () -> Unit
 ) {
     val context = LocalContext.current
@@ -90,7 +90,7 @@ fun RegisterScreen(
                         email = email
                     )
 
-                    onRegisterSuccess()
+                    onRegisterSuccess(name, email)
                 }
             },
             modifier = Modifier.fillMaxWidth()
